@@ -1,6 +1,6 @@
 {
   "name": "multer-storage-cloudinary-v2",
-  "version": "1.0.2",
+  "version": "1.0.1",
   "description": "A modern Cloudinary multer storage engine compatible with both cloudinary SDK v1.x and v2.x",
   "main": "index.js",
   "types": "index.d.ts",
