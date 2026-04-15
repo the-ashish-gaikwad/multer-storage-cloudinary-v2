@@ -1,7 +1,7 @@
 {
   "name": "multer-storage-cloudinary-v2",
-  "version": "1.0.0",
-  "description": "Multer storage engine for Cloudinary with support for both SDK v1.x and v2.x",
+  "version": "1.0.1",
+  "description": "A modern Cloudinary multer storage engine compatible with both cloudinary SDK v1.x and v2.x",
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^2.0.0"
   },
   "engines": {
     "node": ">=14.0.0"
