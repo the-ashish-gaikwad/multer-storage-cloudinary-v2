@@ -5,12 +5,17 @@
 
 **A modern, actively maintained drop-in replacement** for the original [`multer-storage-cloudinary`](https://github.com/affanshahid/multer-storage-cloudinary) that adds **full native support** for both the legacy and modern Cloudinary Node.js SDKs.
 
-| Cloudinary SDK       | How you import                          | Supported |
-|----------------------|-----------------------------------------|-----------|
-| `cloudinary@^1.21.0` | `require('cloudinary').v2`             | ✅        |
-| `cloudinary@^2.x`    | `require('cloudinary')` (top-level)    | ✅        |
+| Cloudinary SDK       | How you import              | Supported |
+|----------------------|-----------------------------|-----------|
+| `cloudinary@^1.21.0` | `require('cloudinary').v2` | ✅        |
+| `cloudinary@^2.x`    | `require('cloudinary').v2` | ✅        |
 
-The original package was written for Cloudinary v1 and breaks when you upgrade to v2 (because the v2 SDK no longer exposes a `.v2` sub-module). This library handles both shapes automatically with zero breaking changes to the public API.
+> **Always use `require('cloudinary').v2`** regardless of SDK version.
+> Despite what the cloudinary v2 docs suggest, `require('cloudinary')` (top-level)
+> does **not** reliably expose `uploader.upload_stream`. The `.v2` sub-module
+> exists and works correctly in both v1 and v2 SDKs — it is the safe, universal import.
+
+The original package was written for Cloudinary v1 and breaks when you upgrade to v2. This library handles both SDK versions with zero breaking changes to the public API.
 
 ---
 
@@ -48,7 +53,7 @@ npm install cloudinary@^1.21.0 multer
 ### With `cloudinary@^2.x` (modern SDK)
 
 ```js
-const cloudinary = require('cloudinary');  // v2 SDK — top-level IS the v2 API
+const cloudinary = require('cloudinary').v2;  // ✅ always use .v2, even with v2 SDK
 const { CloudinaryStorage } = require('multer-storage-cloudinary-v2');
 const multer = require('multer');
 
@@ -59,7 +64,7 @@ cloudinary.config({
 });
 
 const storage = new CloudinaryStorage({
-  cloudinary,          // pass the top-level import directly
+  cloudinary,          // pass .v2 — works for both v1 and v2 SDKs
   params: {
     folder: 'uploads',
     format: async (req, file) => 'webp',
@@ -96,8 +101,7 @@ const storage = new CloudinaryStorage({
 ### TypeScript
 
 ```ts
-import cloudinary from 'cloudinary';          // v2 SDK
-// import { v2 as cloudinary } from 'cloudinary'; // v1 SDK
+import { v2 as cloudinary } from 'cloudinary';  // works for both v1 and v2 SDKs
 import { CloudinaryStorage, CloudinaryFile } from 'multer-storage-cloudinary-v2';
 import multer from 'multer';
 

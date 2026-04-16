@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * multer-storage-cloudinary-v2
@@ -10,7 +10,7 @@
  * The engine auto-detects which SDK shape is provided.
  */
 
-const { PassThrough } = require('stream');
+const { PassThrough } = require("stream");
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -26,7 +26,7 @@ const { PassThrough } = require('stream');
  * @returns {Promise<*>}
  */
 async function resolve(value, req, file) {
-  if (typeof value === 'function') {
+  if (typeof value === "function") {
     return value(req, file);
   }
   return value;
@@ -35,12 +35,17 @@ async function resolve(value, req, file) {
 /**
  * Normalise the cloudinary instance.
  *
- * cloudinary v1.x:  `require('cloudinary')` has both legacy API AND `.v2`
- *                    Users should pass `.v2`, but we handle both shapes.
- * cloudinary v2.x:  `require('cloudinary')` IS the v2 API directly.
- *                    `.uploader.upload_stream` is directly available.
+ * Both cloudinary v1.x and v2.x expose the modern API under `.v2`.
+ * Despite what the cloudinary v2 docs suggest, `require('cloudinary')` at
+ * the top level does NOT reliably expose `uploader.upload_stream` — only
+ * `require('cloudinary').v2` does, consistently across both SDK versions.
  *
- * We return an object with `uploader` that definitely has `upload_stream`.
+ * Resolution order:
+ *   1. If `.v2` sub-key exists and has `upload_stream` → use it (covers
+ *      both v1 root import and v2 top-level import).
+ *   2. If the instance itself has `upload_stream` → use it directly
+ *      (covers the case where the caller already passed `.v2`).
+ *   3. Otherwise throw a clear error.
  *
  * @param {object} cloudinaryInstance
  * @returns {{ uploader: object }}
@@ -48,41 +53,38 @@ async function resolve(value, req, file) {
 function normaliseCloudinary(cloudinaryInstance) {
   if (!cloudinaryInstance) {
     throw new Error(
-      '[multer-storage-cloudinary-v2] A cloudinary instance is required. ' +
-        'Pass `cloudinary: require("cloudinary").v2` (v1 SDK) or ' +
-        '`cloudinary: require("cloudinary")` (v2 SDK).'
+      "[multer-storage-cloudinary-v2] A cloudinary instance is required. " +
+        'Always pass `require("cloudinary").v2` regardless of SDK version.',
     );
   }
 
-  // If the instance itself has a usable uploader with upload_stream → use it.
+  // Preferred: caller already passed `.v2` directly (recommended usage).
   if (
     cloudinaryInstance.uploader &&
-    typeof cloudinaryInstance.uploader.upload_stream === 'function'
+    typeof cloudinaryInstance.uploader.upload_stream === "function"
   ) {
     return cloudinaryInstance;
   }
 
-  // Cloudinary v1 SDK root-level import still has the legacy uploader.
-  // The v2 sub-module lives at `.v2`.
+  // Fallback: caller passed the root cloudinary object (either v1 or v2).
+  // Both SDKs expose the correct API under `.v2`, so unwrap it automatically.
   if (
     cloudinaryInstance.v2 &&
     cloudinaryInstance.v2.uploader &&
-    typeof cloudinaryInstance.v2.uploader.upload_stream === 'function'
+    typeof cloudinaryInstance.v2.uploader.upload_stream === "function"
   ) {
     console.warn(
-      '[multer-storage-cloudinary-v2] You passed the root cloudinary@v1 ' +
-        'object. Using `.v2` automatically. Consider passing ' +
-        '`require("cloudinary").v2` instead.'
+      "[multer-storage-cloudinary-v2] You passed the root cloudinary object. " +
+        "Automatically using `.v2`. For best results always pass " +
+        '`require("cloudinary").v2` explicitly — this works for both v1 and v2 SDKs.',
     );
     return cloudinaryInstance.v2;
   }
 
   throw new Error(
-    '[multer-storage-cloudinary-v2] The provided cloudinary instance does ' +
-      'not expose `uploader.upload_stream`. Make sure you are passing a ' +
-      'valid cloudinary v2 API object.\n' +
-      '  - cloudinary v1 SDK: `require("cloudinary").v2`\n' +
-      '  - cloudinary v2 SDK: `require("cloudinary")`'
+    "[multer-storage-cloudinary-v2] The provided cloudinary instance does " +
+      "not expose `uploader.upload_stream`.\n" +
+      '  Use: `require("cloudinary").v2`  (works for both cloudinary v1 and v2 SDKs)',
   );
 }
 
@@ -128,7 +130,7 @@ class CloudinaryStorage {
   constructor(opts = {}) {
     if (!opts.cloudinary) {
       throw new Error(
-        '[multer-storage-cloudinary-v2] `cloudinary` option is required.'
+        "[multer-storage-cloudinary-v2] `cloudinary` option is required.",
       );
     }
 
@@ -138,7 +140,7 @@ class CloudinaryStorage {
     // Legacy support: `filename` option → treated as `public_id` param
     if (opts.filename && !opts.params?.public_id) {
       const filename = opts.filename;
-      if (this._params && typeof this._params !== 'function') {
+      if (this._params && typeof this._params !== "function") {
         this._params = { ...this._params, public_id: filename };
       }
     }
@@ -154,7 +156,7 @@ class CloudinaryStorage {
    */
   async _resolveParams(req, file) {
     // If params itself is a function → call it to get the params object
-    if (typeof this._params === 'function') {
+    if (typeof this._params === "function") {
       const result = await this._params(req, file);
       return result || {};
     }
@@ -185,7 +187,7 @@ class CloudinaryStorage {
         // Default resource_type to 'auto' so images, videos, and raw files
         // all work without extra configuration.
         if (!uploadOptions.resource_type) {
-          uploadOptions.resource_type = 'auto';
+          uploadOptions.resource_type = "auto";
         }
 
         // Create the Cloudinary upload stream.
@@ -220,19 +222,19 @@ class CloudinaryStorage {
               created_at: result.created_at,
               folder: result.folder,
             });
-          }
+          },
         );
 
         // Pipe the incoming file stream into Cloudinary.
         // Use a PassThrough so we don't risk swallowing stream errors.
         const passthrough = new PassThrough();
 
-        passthrough.on('error', (err) => {
+        passthrough.on("error", (err) => {
           uploadStream.destroy(err);
           cb(err);
         });
 
-        uploadStream.on('error', (err) => {
+        uploadStream.on("error", (err) => {
           cb(err);
         });
 

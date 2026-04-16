@@ -1,5 +1,5 @@
-import { Request } from 'express';
-import { StorageEngine } from 'multer';
+import { Request } from "express";
+import { StorageEngine } from "multer";
 
 // ─── Cloudinary Result ────────────────────────────────────────────────────────
 
@@ -62,7 +62,9 @@ export interface CloudinaryFile extends Express.Multer.File {
 /**
  * A value that can be supplied either statically or as an async factory.
  */
-export type ParamValue<T> = T | ((req: Request, file: Express.Multer.File) => T | Promise<T>);
+export type ParamValue<T> =
+  | T
+  | ((req: Request, file: Express.Multer.File) => T | Promise<T>);
 
 /**
  * The full set of upload parameters that can be passed to CloudinaryStorage.
@@ -79,7 +81,7 @@ export interface CloudinaryStorageParams {
   /** Output format, e.g. 'jpg', 'png', 'webp', 'mp4' */
   format?: ParamValue<string>;
   /** 'image' | 'video' | 'raw' | 'auto' (default: 'auto') */
-  resource_type?: ParamValue<'image' | 'video' | 'raw' | 'auto'>;
+  resource_type?: ParamValue<"image" | "video" | "raw" | "auto">;
   /** Eager transformation(s) */
   transformation?: ParamValue<object | object[]>;
   /** Tags to attach to the asset */
@@ -100,12 +102,19 @@ export interface CloudinaryStorageOptions {
   /**
    * A configured cloudinary v2 API object.
    *
+   * Always use `.v2` regardless of SDK version — it works correctly for both:
    * - cloudinary SDK v1.x: `require('cloudinary').v2`
-   * - cloudinary SDK v2.x: `require('cloudinary')`
+   * - cloudinary SDK v2.x: `require('cloudinary').v2`  ← same, NOT top-level
+   *
+   * Despite cloudinary v2 docs, `require('cloudinary')` (top-level) does not
+   * reliably expose `uploader.upload_stream` and should not be used here.
    */
   cloudinary: {
     uploader: {
-      upload_stream: (options: object, callback: (error: Error | null, result: CloudinaryUploadResult) => void) => NodeJS.WritableStream;
+      upload_stream: (
+        options: object,
+        callback: (error: Error | null, result: CloudinaryUploadResult) => void,
+      ) => NodeJS.WritableStream;
       destroy: (publicId: string, options?: object) => Promise<object>;
     };
     [key: string]: unknown;
@@ -134,7 +143,12 @@ export interface CloudinaryStorageOptions {
    *   public_id: Date.now().toString(),
    * })
    */
-  params?: CloudinaryStorageParams | ((req: Request, file: Express.Multer.File) => CloudinaryStorageParams | Promise<CloudinaryStorageParams>);
+  params?:
+    | CloudinaryStorageParams
+    | ((
+        req: Request,
+        file: Express.Multer.File,
+      ) => CloudinaryStorageParams | Promise<CloudinaryStorageParams>);
 }
 
 // ─── CloudinaryStorage ────────────────────────────────────────────────────────
@@ -144,14 +158,12 @@ export interface CloudinaryStorageOptions {
  *
  * Compatible with:
  * - `cloudinary` SDK v1.x  → pass `require('cloudinary').v2`
- * - `cloudinary` SDK v2.x  → pass `require('cloudinary')`
+ * - `cloudinary` SDK v2.x  → pass `require('cloudinary').v2`  (same — NOT top-level)
  *
  * @example
  * ```ts
  * import { CloudinaryStorage } from 'multer-storage-cloudinary-v2';
- * import { v2 as cloudinary } from 'cloudinary'; // v1 SDK
- * // OR
- * import cloudinary from 'cloudinary';           // v2 SDK
+ * import { v2 as cloudinary } from 'cloudinary'; // works for both v1 and v2 SDK
  *
  * const storage = new CloudinaryStorage({
  *   cloudinary,
@@ -169,12 +181,12 @@ export declare class CloudinaryStorage implements StorageEngine {
   _handleFile(
     req: Request,
     file: Express.Multer.File,
-    callback: (error?: Error | null, info?: Partial<CloudinaryFile>) => void
+    callback: (error?: Error | null, info?: Partial<CloudinaryFile>) => void,
   ): void;
 
   _removeFile(
     req: Request,
     file: Express.Multer.File & { public_id?: string; resource_type?: string },
-    callback: (error: Error | null) => void
+    callback: (error: Error | null) => void,
   ): void;
 }
